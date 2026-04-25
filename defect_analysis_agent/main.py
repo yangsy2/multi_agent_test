@@ -2,36 +2,70 @@
 """
 다중 Agent DEFECT 분석 시스템 - 메인 실행 파일
 
-사용법:
-  python main.py                          # 기본 테스트 (파티클 / LOT-001)
-  python main.py <DEFECT명> <LOT_ID>      # 사용자 지정
-  python main.py <DEFECT명> <LOT_ID> <모델명>  # 모델까지 지정
+시작 시 분석 모드를 선택합니다:
+  1) DEFECT 분석: DEFECT 명 기준으로 관련 공정을 분석
+  2) LOT 분석:    LOT ID 기준으로 전체 공정을 분석
 """
 
 import sys
 import os
 
-# 프로젝트 루트를 sys.path에 추가
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from graph.pipeline import run_analysis
 
 
+def select_mode() -> str:
+    """분석 모드를 선택합니다."""
+    print("\n" + "=" * 58)
+    print("🏭  DEFECT 다중 Agent 분석 시스템")
+    print("=" * 58)
+    print("  분석 모드를 선택하세요:")
+    print("  [1] DEFECT 분석")
+    print("  [2] LOT 분석")
+    print("=" * 58)
+
+    while True:
+        choice = input("선택 (1 또는 2): ").strip()
+        if choice in ("1", "2"):
+            return "defect" if choice == "1" else "lot"
+        print("  ⚠ 1 또는 2를 입력하세요.")
+
+
+def get_defect_name() -> str:
+    examples = "파티클, CD불량, 두께불량, PTN_ERR, SCRATCH 등"
+    while True:
+        name = input(f"  DEFECT 명 입력 ({examples}): ").strip()
+        if name:
+            return name
+        print("  ⚠ DEFECT 명을 입력하세요.")
+
+
+def get_lot_id() -> str:
+    while True:
+        lot = input("  LOT ID 입력 (예: LOT-A001): ").strip()
+        if lot:
+            return lot
+        print("  ⚠ LOT ID를 입력하세요.")
+
+
 def main():
-    # 인자 파싱
-    defect_name = sys.argv[1] if len(sys.argv) > 1 else "파티클"
-    lot_id      = sys.argv[2] if len(sys.argv) > 2 else "LOT-001"
-    model       = sys.argv[3] if len(sys.argv) > 3 else "gemma3:4b"
+    mode = select_mode()
 
-    print("=" * 60)
-    print("🏭 DEFECT 다중 Agent 분석 시스템")
-    print("=" * 60)
-    print(f"  DEFECT  : {defect_name}")
-    print(f"  LOT ID  : {lot_id}")
-    print(f"  LLM 모델: {model}")
-    print("=" * 60)
+    if mode == "defect":
+        print("\n─── DEFECT 분석 모드 ───────────────────────────────")
+        defect_name = get_defect_name()
+        lot_id      = get_lot_id()
+    else:
+        print("\n─── LOT 분석 모드 ──────────────────────────────────")
+        lot_id      = get_lot_id()
+        defect_name = "전체공정"   # LOT 모드는 전체 공정 분석
 
-    report = run_analysis(defect_name, lot_id, model)
+    print("\n" + "=" * 58)
+    print(f"  분석 시작  DEFECT={defect_name}  LOT={lot_id}")
+    print("=" * 58 + "\n")
+
+    report = run_analysis(defect_name, lot_id)
     return report
 
 
